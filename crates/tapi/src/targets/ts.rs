@@ -73,9 +73,9 @@ pub fn ty_decl(ty: DynTapi) -> Option<String> {
                         ),
                     )
                 } else {
-                    let ts_fields = ts_fields(&s.fields);
+                    let ts_fields = ts_fields(true, &s.fields);
                     format!(
-                        "export type {} = {{ {ts_fields} }};",
+                        "export type {} = {{\n{ts_fields}\n}};",
                         s.attr.name.serialize_name,
                     )
                 }
@@ -86,7 +86,7 @@ pub fn ty_decl(ty: DynTapi) -> Option<String> {
             }
             TypeKind::Enum(e) => {
                 let mut out = String::new();
-                write!(out, "export type {} = ", e.attr.name.serialize_name)?;
+                write!(out, "export type {} =\n  | ", e.attr.name.serialize_name)?;
 
                 let has_data = e
                     .variants
@@ -119,15 +119,15 @@ pub fn ty_decl(ty: DynTapi) -> Option<String> {
                     },
                     VariantKind::Struct(fields) => match &e.attr.tag {
                         TagType::External => {
-                            let ts_fields = ts_fields(fields);
+                            let ts_fields = ts_fields(false, fields);
                             format!("{{ {:?}: {{ {ts_fields} }} }}", v.name)
                         }
                         TagType::Internal { tag } => {
-                            let ts_fields = ts_fields(fields);
+                            let ts_fields = ts_fields(false, fields);
                             format!("{{ {tag:?}: {:?}, {ts_fields} }}", v.name)
                         }
                         TagType::Adjacent { tag, content } => {
-                            let ts_fields = ts_fields(fields);
+                            let ts_fields = ts_fields(false, fields);
                             format!(
                                 "{{ {tag:?}: {:?}, {content:?}: {{ {ts_fields} }} }}",
                                 v.name
@@ -137,7 +137,7 @@ pub fn ty_decl(ty: DynTapi) -> Option<String> {
                     },
                 });
 
-                write!(out, "{};", variants.clone().format(" | "))?;
+                write!(out, "{};", variants.clone().format("\n  | "))?;
                 if !has_data {
                     write!(
                         out,
@@ -168,10 +168,16 @@ fn ts_tuple(fields: &[DynTapi]) -> String {
     }
 }
 
-fn ts_fields(fields: &[crate::kind::Field]) -> impl std::fmt::Display + '_ {
+fn ts_fields(multi_line: bool, fields: &[crate::kind::Field]) -> impl std::fmt::Display + '_ {
+    let fields =
     fields
         .iter()
-        .filter(|f| !f.attr.skip_serializing)
-        .map(|f| format!("{:?}: {}", f.name, full_ty_name(f.ty)))
-        .format(", ")
+        .filter(|f| !f.attr.skip_serializing);
+    if multi_line {
+        fields.map(|f| format!("  {:?}: {}", f.name, full_ty_name(f.ty)))
+        .join(",\n")
+    } else {
+        fields.map(|f| format!("{:?}: {}", f.name, full_ty_name(f.ty)))
+        .join(", ")
+    }
 }
