@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+repository = "https://github.com/oeb25/tapi/"
+authors = ["Oliver Bøving <oliver@bvng.dk>"]
+license = "MIT OR Apache-2.0"
