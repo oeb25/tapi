@@ -16,7 +16,11 @@ fn basic_struct() {
     }
 
     insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"export type A = { "a": number, "b": string };"###);
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @"type A = { a: int32 ; b: string }");
+    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    type A =
+      { a: int32
+        b: string }
+    "###);
 }
 
 #[test]
@@ -27,7 +31,10 @@ fn empty_struct() {
     struct A {}
 
     insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = {  };");
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @"type A = {  }");
+    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    type A =
+      {  }
+    "###);
 }
 #[test]
 fn transparent_struct() {
@@ -40,7 +47,10 @@ fn transparent_struct() {
     }
 
     insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = number[];");
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @"type A = { x: List<int32> }");
+    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    type A =
+      { x: List<int32> }
+    "###);
 }
 #[test]
 fn tuple_single_struct() {
@@ -76,7 +86,10 @@ fn transparent_struct_with_multiple_fields() {
     }
 
     insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = string;");
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @"type A = { y: string }");
+    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    type A =
+      { y: string }
+    "###);
 }
 
 #[test]

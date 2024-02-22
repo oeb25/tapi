@@ -9,7 +9,7 @@ use crate::{
 pub fn builder() -> TypesBuilder {
     TypesBuilder {
         prelude: include_str!("./prelude.fs").to_string() + "\n",
-        start_namespace: Box::new(|path, name| format!("module {name} =")),
+        start_namespace: Box::new(|_, name| format!("module {name} =")),
         end_namespace: Box::new(|_, _| String::new()),
         decl: Box::new(ty_decl),
     }
@@ -65,11 +65,11 @@ pub fn ty_decl(ty: DynTapi) -> Option<String> {
         Ok(Some(match ty.kind() {
             TypeKind::Struct(s) => {
                 let fs_fields = fs_fields(&s.fields);
-                format!("type {} = {{ {fs_fields} }}", s.attr.name.serialize_name,)
+                format!("type {} =\n  {{ {fs_fields} }}", s.attr.name.serialize_name)
             }
             TypeKind::TupleStruct(s) => {
                 let fs_fields = fs_tuple(&s.fields.iter().map(|f| f.ty).collect_vec());
-                format!("type {} = {fs_fields}", s.attr.name.serialize_name,)
+                format!("type {} = {fs_fields}", s.attr.name.serialize_name)
             }
             TypeKind::Enum(e) => {
                 let mut out = String::new();
@@ -112,7 +112,7 @@ pub fn ty_decl(ty: DynTapi) -> Option<String> {
                 writeln!(
                     out,
                     "[<JsonFSharpConverter({})>]",
-                    converter_options.iter().format(", ")
+                    converter_options.iter().format(", "),
                 )?;
                 writeln!(out, "type {} =", e.attr.name.serialize_name)?;
 
@@ -160,5 +160,5 @@ fn fs_fields(fields: &[crate::kind::Field]) -> impl std::fmt::Display + '_ {
         .iter()
         .filter(|f| !f.attr.skip_serializing)
         .map(|f| format!("{}: {}", f.name, full_ty_name(f.ty)))
-        .format(" ; ")
+        .format("\n    ")
 }
