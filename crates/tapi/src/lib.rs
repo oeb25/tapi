@@ -182,6 +182,12 @@ impl_typed!(
     chrono::NaiveTime = "string" & BuiltinTypeKind::String,
     chrono::NaiveDateTime = "string" & BuiltinTypeKind::String,
 );
+#[cfg(feature = "toml")]
+impl_typed!(
+    toml::value::Date = "string" & BuiltinTypeKind::String,
+    toml::value::Datetime = "string" & BuiltinTypeKind::String,
+    toml::value::Time = "string" & BuiltinTypeKind::String,
+);
 impl_generic!(
     Vec = "{}[]" & "z.array({})" & TypeKind::List(T::boxed()),
     Option = "({} | null)" & "z.optional({})" & TypeKind::Option(T::boxed()),
