@@ -175,6 +175,13 @@ impl_typed!(
     bool = "boolean" & BuiltinTypeKind::Bool,
     char = "string" & BuiltinTypeKind::Char,
 );
+#[cfg(feature = "chrono")]
+impl_typed!(
+    chrono::DateTime<chrono::Utc> = "string" & BuiltinTypeKind::String,
+    chrono::NaiveDate = "string" & BuiltinTypeKind::String,
+    chrono::NaiveTime = "string" & BuiltinTypeKind::String,
+    chrono::NaiveDateTime = "string" & BuiltinTypeKind::String,
+);
 impl_generic!(
     Vec = "{}[]" & "z.array({})" & TypeKind::List(T::boxed()),
     Option = "({} | null)" & "z.optional({})" & TypeKind::Option(T::boxed()),

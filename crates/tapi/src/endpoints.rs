@@ -404,3 +404,35 @@ impl ResponseTapi {
         }
     }
 }
+
+// NOTE: This is a WIP implementation of the endpoint trait that does not require any special impl
+
+// trait Endpointish {}
+
+// impl<
+//         A: tapi::endpoints::RequestTapiExtractor,
+//         R: tapi::endpoints::ResponseTapiExtractor,
+//         RF: std::future::Future<Output = R>,
+//     > Endpointish for fn(A) -> RF
+// {
+// }
+
+// impl<
+//         A: tapi::endpoints::RequestTapiExtractor,
+//         B: tapi::endpoints::RequestTapiExtractor,
+//         R: tapi::endpoints::ResponseTapiExtractor,
+//         RF: std::future::Future<Output = R>,
+//     > Endpointish for fn(A, B) -> RF
+// {
+// }
+
+// fn thing_req<E: tapi::endpoints::RequestTapiExtractor>() {}
+// fn thing_res<E: tapi::endpoints::ResponseTapiExtractor>() {}
+// fn thing(e: &dyn Endpointish) {}
+
+// fn thingy() {
+//     thing_req::<State<AppState>>();
+//     thing_req::<Json<ce_shell::Input>>();
+//     thing_res::<Json<Option<AnalysisExecution>>>();
+//     thing(&(exec_analysis as fn(_, _) -> _));
+// }

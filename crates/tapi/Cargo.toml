@@ -8,6 +8,7 @@ license.workspace = true
 
 [dependencies]
 axum = "0.7.4"
+chrono = { version = "0.4.34", optional = true }
 dyn-clone = "1.0.16"
 futures-util = "0.3.30"
 heck = "0.4.1"
@@ -22,3 +23,6 @@ tsify = { version = "0.4.5", default-features = false, features = ["json"] }
 color-eyre = "0.6.2"
 insta = "1.34.0"
 pretty_assertions = "1.4.0"
+
+[features]
+chrono = ["dep:chrono"]
