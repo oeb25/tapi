@@ -178,6 +178,7 @@ impl_typed!(
 #[cfg(feature = "chrono")]
 impl_typed!(
     chrono::DateTime<chrono::Utc> = "string" & BuiltinTypeKind::String,
+    chrono::DateTime<chrono::FixedOffset> = "string" & BuiltinTypeKind::String,
     chrono::NaiveDate = "string" & BuiltinTypeKind::String,
     chrono::NaiveTime = "string" & BuiltinTypeKind::String,
     chrono::NaiveDateTime = "string" & BuiltinTypeKind::String,
