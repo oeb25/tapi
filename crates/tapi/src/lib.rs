@@ -1,4 +1,5 @@
 pub mod builder;
+#[cfg(feature = "endpoints")]
 pub mod endpoints;
 pub mod kind;
 pub mod targets;
@@ -189,6 +190,8 @@ impl_typed!(
     toml::value::Datetime = "string" & BuiltinTypeKind::String,
     toml::value::Time = "string" & BuiltinTypeKind::String,
 );
+#[cfg(feature = "smol_str")]
+impl_typed!(smol_str::SmolStr = "string" & BuiltinTypeKind::String,);
 impl_generic!(
     Vec = "{}[]" & "z.array({})" & TypeKind::List(T::boxed()),
     Option = "({} | null)" & "z.optional({})" & TypeKind::Option(T::boxed()),
