@@ -472,6 +472,11 @@ impl<T: Tapi + 'static> ResponseTapiExtractor for axum::response::Html<T> {
         ResponseTapi::Html
     }
 }
+impl<T: ResponseTapiExtractor, E> ResponseTapiExtractor for Result<T, E> {
+    fn extract_response() -> ResponseTapi {
+        T::extract_response()
+    }
+}
 impl<T: Tapi + 'static> ResponseTapiExtractor for Sse<T> {
     fn extract_response() -> ResponseTapi {
         ResponseTapi::Sse(<T as Tapi>::boxed())
