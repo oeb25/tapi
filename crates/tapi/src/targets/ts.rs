@@ -160,7 +160,7 @@ pub fn ty_decl(ty: DynTapi) -> Option<String> {
     inner(ty).unwrap()
 }
 
-fn ts_tuple(fields: &[DynTapi]) -> String {
+pub fn ts_tuple(fields: &[DynTapi]) -> String {
     if fields.len() == 1 {
         format!("{}", fields.iter().map(|f| full_ty_name(*f)).format(", "))
     } else {
@@ -168,16 +168,19 @@ fn ts_tuple(fields: &[DynTapi]) -> String {
     }
 }
 
-fn ts_fields(multi_line: bool, fields: &[crate::kind::Field]) -> impl std::fmt::Display + '_ {
-    let fields =
-    fields
-        .iter()
-        .filter(|f| !f.attr.skip_serializing);
+pub fn ts_fields(multi_line: bool, fields: &[crate::kind::Field]) -> impl std::fmt::Display + '_ {
+    let fields = fields.iter().filter(|f| !f.attr.skip_serializing).map(|f| {
+        let name = match &f.name {
+            crate::kind::FieldName::Named(n) => &n.serialize_name,
+            crate::kind::FieldName::Index(_) => todo!(),
+        };
+        (name, full_ty_name(f.ty))
+    });
     if multi_line {
-        fields.map(|f| format!("  {:?}: {}", f.name, full_ty_name(f.ty)))
-        .join(",\n")
+        fields
+            .map(|(name, ty)| format!("  {name}: {ty}"))
+            .join(",\n")
     } else {
-        fields.map(|f| format!("{:?}: {}", f.name, full_ty_name(f.ty)))
-        .join(", ")
+        fields.map(|(name, ty)| format!("{name}: {ty}")).join(", ")
     }
 }

@@ -1,7 +1,10 @@
 use futures_util::StreamExt;
 use itertools::Itertools;
 
-use crate::{targets::ts, transitive_closure, DynTapi, Tapi};
+use crate::{
+    targets::{js, ts},
+    transitive_closure, DynTapi, Tapi,
+};
 
 #[derive(Debug)]
 pub enum Method {
@@ -184,6 +187,87 @@ pub trait Endpoint<AppState> {
         }
         s
     }
+    fn js_client(&self) -> String {
+        use std::fmt::Write;
+        let mut s = String::new();
+        match (self.body(), self.res()) {
+            (
+                RequestStructure {
+                    body: None, path, ..
+                },
+                ResponseTapi::Sse(ty),
+            ) => {
+                let mut params = Vec::new();
+                let final_path = self
+                    .path()
+                    .split('/')
+                    .filter(|p| !p.is_empty())
+                    .map(|p| {
+                        if let Some(name) = p.strip_prefix(':') {
+                            params.push(name);
+                            format!("/${{{name}}}")
+                        } else {
+                            format!("/{p}")
+                        }
+                    })
+                    .join("");
+                let final_path = format!("`{final_path}`");
+                if let Some(path_param) = path {
+                    write!(
+                        s,
+                        "/** @type {{ReturnType<typeof sse<[{}], {}>>}} */ (\n    sse(({}) => {final_path}, \"json\")\n  )",
+                        ts::full_ty_name(path_param),
+                        ts::full_ty_name(ty),
+                        params.iter().format(", "),
+                    )
+                    .unwrap();
+                } else {
+                    // TODO: handle non-json responses
+                    write!(
+                        s,
+                        "/** @type {{ReturnType<typeof sse<[{}], {}>>}} */ (\n    sse(({}) => {final_path}, \"json\")\n  )",
+                        "",
+                        ts::full_ty_name(ty),
+                        params.iter().format(", "),
+                    )
+                    .unwrap();
+                }
+            }
+            (RequestStructure { body, .. }, res) => {
+                write!(
+                    s,
+                    "/** @type {{ReturnType<typeof request<{}, {}>>}} */ (\n    request({:?}, {:?}, {:?}, {:?})\n  )",
+                    match body {
+                        Some(RequestStructureBody::Query(ty)) => ts::full_ty_name(ty),
+                        Some(RequestStructureBody::Json(ty)) => ts::full_ty_name(ty),
+                        // TODO: is this right?
+                        Some(RequestStructureBody::PlainText) =>
+                            "Record<string, never>".to_string(),
+                        None => "Record<string, never>".to_string(),
+                    },
+                    ts::full_ty_name(res.ty()),
+                    match body {
+                        Some(RequestStructureBody::Query(_)) => "query",
+                        Some(RequestStructureBody::Json(_)) => "json",
+                        Some(RequestStructureBody::PlainText) => "none",
+                        None => "none",
+                    },
+                    self.method().as_str(),
+                    self.path(),
+                    match res {
+                        ResponseTapi::PlainText => "text",
+                        ResponseTapi::Bytes => "bytes",
+                        ResponseTapi::Json(_) => "json",
+                        ResponseTapi::Html => "html",
+                        ResponseTapi::Sse(_) => "sse",
+                        ResponseTapi::None => "none",
+                    }
+                )
+                .unwrap();
+            }
+        }
+        s
+    }
 }
 impl<'a, AppState, T> Endpoint<AppState> for &'a T
 where
@@ -238,6 +322,18 @@ impl<'a, AppState> Endpoints<'a, AppState> {
             let name = heck::AsLowerCamelCase(endpoint.path()).to_string();
             let name = if name.is_empty() { "index" } else { &name };
             s.push_str(&format!("    {name}: {},\n", endpoint.ts_client()));
+        }
+        s.push_str("};\n");
+        s
+    }
+    pub fn js_client(&self) -> String {
+        let mut s = js::builder().types(self.tys());
+
+        s.push_str("export const api = {\n");
+        for endpoint in &self.endpoints {
+            let name = heck::AsLowerCamelCase(endpoint.path()).to_string();
+            let name = if name.is_empty() { "index" } else { &name };
+            s.push_str(&format!("  {name}: {},\n", endpoint.js_client()));
         }
         s.push_str("};\n");
         s

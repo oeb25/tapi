@@ -1,8 +1,8 @@
 use darling::FromMeta;
 use proc_macro2::Ident;
 use quote::format_ident;
-use serde_derive_internals::attr::TagType;
-use syn::{parse_macro_input, Fields};
+use serde_derive_internals::{ast, attr::TagType};
+use syn::parse_macro_input;
 
 #[derive(Debug)]
 struct Args {
@@ -206,9 +206,9 @@ pub fn tapi_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             syn::GenericParam::Const(_) => todo!("syn::GenericParam::Const"),
         }
     }
-    let serde_flags = {
+    let container = {
         let cx = serde_derive_internals::Ctxt::new();
-        let container = serde_derive_internals::ast::Container::from_ast(
+        let container = ast::Container::from_ast(
             &cx,
             &derive_input,
             serde_derive_internals::Derive::Serialize,
@@ -218,31 +218,29 @@ pub fn tapi_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         container
     };
 
-    let attr = build_container_attributes(&serde_flags, &tapi_path);
+    let attr = build_container_attributes(&container, &tapi_path);
 
-    let result: proc_macro2::TokenStream = match &derive_input.data {
-        syn::Data::Struct(st) => {
+    let result: proc_macro2::TokenStream = match &container.data {
+        ast::Data::Struct(_style, st_fields) => {
+            // TODO: rewrite this to use the `style`
             let mut fields = Vec::new();
             let mut kind_fields = Vec::new();
             let mut tuple_fields = Vec::new();
-            for (idx, field) in st.fields.iter().enumerate() {
+            for field in st_fields {
                 let ty = field.ty.clone();
-                let serde_flags = {
-                    let cx = serde_derive_internals::Ctxt::new();
-                    let field = serde_derive_internals::attr::Field::from_ast(
-                        &cx,
-                        idx,
-                        field,
-                        None,
-                        serde_flags.attrs.default(),
-                    );
-                    cx.check().unwrap();
-                    field
-                };
-                let attr = build_field_attributes(&serde_flags, &tapi_path);
-                let field_name = match field.ident.clone() {
-                    Some(ident) => {
-                        quote::quote!(#tapi_path::kind::FieldName::Named(stringify!(#ident).to_string()))
+                let field_flags = &field;
+                let attr = build_field_attributes(&field_flags.attrs, &tapi_path);
+                let field_name = match field.original.ident.clone() {
+                    Some(_) => {
+                        let serialize_name =
+                            format_ident!("{}", field.attrs.name().serialize_name());
+                        let deserialize_name =
+                            format_ident!("{}", field.attrs.name().deserialize_name());
+
+                        quote::quote!(#tapi_path::kind::FieldName::Named(#tapi_path::kind::Name {
+                            serialize_name: stringify!(#serialize_name).to_string(),
+                            deserialize_name: stringify!(#deserialize_name).to_string(),
+                        }))
                     }
                     None => {
                         tuple_fields.push(quote::quote!(#tapi_path::kind::TupleStructField {
@@ -302,39 +300,37 @@ pub fn tapi_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }
             }
         }
-        syn::Data::Enum(en) => {
+        ast::Data::Enum(en_variants) => {
             let mut kind_variants = Vec::new();
-            for variant in &en.variants {
+            for variant in en_variants {
                 let ident = &variant.ident;
 
-                match &variant.fields {
-                    Fields::Unit => {
+                match &variant.style {
+                    ast::Style::Unit => {
+                        assert!(variant.fields.is_empty(), "unit has no fields");
+
                         kind_variants.push(quote::quote!(#tapi_path::kind::EnumVariant {
                             name: stringify!(#ident).to_string(),
                             kind: #tapi_path::kind::VariantKind::Unit,
                         }))
                     }
-                    Fields::Named(fields) => {
-                        let fields = fields.named.iter().map(|f| {
-                            let name = f.ident.clone().expect("field did not have a name");
+                    ast::Style::Struct => {
+                        let fields = variant.fields.iter().map(|f| {
                             let ty = f.ty.clone();
-                            let serde_flags = {
-                                let cx = serde_derive_internals::Ctxt::new();
-                                let field = serde_derive_internals::attr::Field::from_ast(
-                                    &cx,
-                                    0,
-                                    f,
-                                    None,
-                                    serde_flags.attrs.default(),
-                                );
-                                cx.check().unwrap();
-                                field
-                            };
-                            let attr = build_field_attributes(&serde_flags, &tapi_path);
+                            let attr = build_field_attributes(&f.attrs, &tapi_path);
+
+                            let serialize_name =
+                                format_ident!("{}", f.attrs.name().serialize_name());
+                            let deserialize_name =
+                                format_ident!("{}", f.attrs.name().deserialize_name());
+
                             quote::quote!(
                                 #tapi_path::kind::Field {
                                     attr: #attr,
-                                    name: #tapi_path::kind::FieldName::Named(stringify!(#name).to_string()),
+                                    name: #tapi_path::kind::FieldName::Named(#tapi_path::kind::Name {
+                                        serialize_name: stringify!(#serialize_name).to_string(),
+                                        deserialize_name: stringify!(#deserialize_name).to_string(),
+                                    }),
                                     ty: <#ty as #tapi_path::Tapi>::boxed(),
                                 }
                             )
@@ -344,8 +340,17 @@ pub fn tapi_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                             kind: #tapi_path::kind::VariantKind::Struct([#(#fields),*].to_vec()),
                         }))
                     }
-                    Fields::Unnamed(fields) => {
-                        let fields = fields.unnamed.iter().map(|f| f.ty.clone());
+                    ast::Style::Tuple => {
+                        let fields = variant.fields.iter().map(|f| f.ty.clone());
+                        kind_variants.push(quote::quote!(#tapi_path::kind::EnumVariant {
+                            name: stringify!(#ident).to_string(),
+                            kind: #tapi_path::kind::VariantKind::Tuple([#(<#fields as #tapi_path::Tapi>::boxed()),*].to_vec()),
+                        }))
+                    }
+                    ast::Style::Newtype => {
+                        assert_eq!(variant.fields.len(), 1, "newtype has exactly one field");
+
+                        let fields = variant.fields.iter().map(|f| f.ty.clone());
                         kind_variants.push(quote::quote!(#tapi_path::kind::EnumVariant {
                             name: stringify!(#ident).to_string(),
                             kind: #tapi_path::kind::VariantKind::Tuple([#(<#fields as #tapi_path::Tapi>::boxed()),*].to_vec()),
@@ -372,7 +377,6 @@ pub fn tapi_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }
             }
         }
-        syn::Data::Union(_) => todo!("unions are not supported yet"),
     };
 
     // let pretty = prettyplease::unparse(&syn::parse2(result.clone()).unwrap());
@@ -381,7 +385,7 @@ pub fn tapi_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 fn build_container_attributes(
-    serde_flags: &serde_derive_internals::ast::Container<'_>,
+    serde_flags: &ast::Container<'_>,
     tapi_path: &proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let name = {

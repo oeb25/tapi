@@ -117,7 +117,7 @@ pub struct Field {
 
 #[derive(Clone)]
 pub enum FieldName {
-    Named(String),
+    Named(Name),
     Index(usize),
 }
 
@@ -130,14 +130,14 @@ impl std::fmt::Debug for FieldName {
     }
 }
 
-impl std::fmt::Display for FieldName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FieldName::Named(name) => write!(f, "{}", name),
-            FieldName::Index(idx) => write!(f, "{}", idx),
-        }
-    }
-}
+// impl std::fmt::Display for FieldName {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         match self {
+//             FieldName::Named(name) => write!(f, "{}", name),
+//             FieldName::Index(idx) => write!(f, "{}", idx),
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct FieldAttributes {

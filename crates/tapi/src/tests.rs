@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use serde::Serialize;
 
 use crate::{
@@ -17,14 +19,38 @@ fn basic_struct() {
 
     insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A = {
-      "a": number,
-      "b": string
+      a: number,
+      b: string
     };
     "###);
     insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     type A =
       { a: int32
         b: string }
+    "###);
+}
+
+#[test]
+fn rename_all_struct() {
+    // let _ = color_eyre::install();
+    #[derive(Tapi)]
+    #[tapi(krate = "crate")]
+    #[serde(rename_all = "camelCase")]
+    struct A {
+        field_a: i32,
+        field_b: String,
+    }
+
+    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    export type A = {
+      fieldA: number,
+      fieldB: string
+    };
+    "###);
+    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    type A =
+      { fieldA: int32
+        fieldB: string }
     "###);
 }
 
@@ -187,8 +213,8 @@ fn tagged_enum_with_data() {
 
     insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A =
-      | { "type": "X", "wow": string }
-      | { "type": "Y", "thingy": string }
+      | { "type": "X", wow: string }
+      | { "type": "Y", thingy: string }
       | { "type": "Z" };
     "###);
     insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
@@ -242,7 +268,7 @@ fn externally_tagged_with_data() {
     insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A =
       | { "X": string }
-      | { "Y": { "thingy": string } }
+      | { "Y": { thingy: string } }
       | "Z"
       | { "W": [number, number] };
     "###);
@@ -305,7 +331,7 @@ fn adjacent_with_data() {
     insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A =
       | { "type": "X", "data": string }
-      | { "type": "Y", "data": { "thingy": string } }
+      | { "type": "Y", "data": { thingy: string } }
       | { "type": "Z" }
       | { "type": "W", "data": [number, number] };
     "###);

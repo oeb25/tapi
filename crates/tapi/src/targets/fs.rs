@@ -159,6 +159,12 @@ fn fs_fields(fields: &[crate::kind::Field]) -> impl std::fmt::Display + '_ {
     fields
         .iter()
         .filter(|f| !f.attr.skip_serializing)
-        .map(|f| format!("{}: {}", f.name, full_ty_name(f.ty)))
+        .map(|f| {
+            let name = match &f.name {
+                crate::kind::FieldName::Named(n) => &n.serialize_name,
+                crate::kind::FieldName::Index(_) => todo!(),
+            };
+            format!("{name}: {}", full_ty_name(f.ty))
+        })
         .format("\n    ")
 }
