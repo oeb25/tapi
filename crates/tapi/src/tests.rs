@@ -17,13 +17,13 @@ fn basic_struct() {
         b: String,
     }
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A = {
       a: number,
       b: string
     };
     "###);
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     type A =
       { a: int32
         b: string }
@@ -41,13 +41,13 @@ fn rename_all_struct() {
         field_b: String,
     }
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A = {
       fieldA: number,
       fieldB: string
     };
     "###);
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     type A =
       { fieldA: int32
         fieldB: string }
@@ -61,12 +61,12 @@ fn empty_struct() {
     #[tapi(krate = "crate")]
     struct A {}
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A = {
 
     };
     "###);
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     type A =
       {  }
     "###);
@@ -81,8 +81,8 @@ fn transparent_struct() {
         x: Vec<i32>,
     }
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = number[];");
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = number[];");
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     type A =
       { x: List<int32> }
     "###);
@@ -94,8 +94,8 @@ fn tuple_single_struct() {
     #[tapi(krate = "crate")]
     struct A(String);
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = string;");
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @"type A = string");
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = string;");
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @"type A = string");
 }
 #[test]
 fn tuple_multi_struct() {
@@ -104,8 +104,8 @@ fn tuple_multi_struct() {
     #[tapi(krate = "crate")]
     struct A(String, i32, Vec<A>);
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = [string, number, tapi.tests.tuple_multi_struct.A[]];");
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @"type A = string * int32 * List<tapi.tests.tuple_multi_struct.A>");
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = [string, number, tapi.tests.tuple_multi_struct.A[]];");
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @"type A = string * int32 * List<tapi.tests.tuple_multi_struct.A>");
 }
 
 #[test]
@@ -120,8 +120,8 @@ fn transparent_struct_with_multiple_fields() {
         y: String,
     }
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = string;");
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @"export type A = string;");
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     type A =
       { y: string }
     "###);
@@ -138,7 +138,7 @@ fn basic_enum() {
         Z,
     }
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A =
       | "X"
       | "Y"
@@ -159,13 +159,13 @@ fn tagged_enum() {
         Z,
     }
 
-    insta::assert_display_snapshot!(serde_json::to_string_pretty(&A::X).unwrap(), @r###"
+    insta::assert_snapshot!(serde_json::to_string_pretty(&A::X).unwrap(), @r###"
     {
       "type": "X"
     }
     "###);
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A =
       | { "type": "X" }
       | { "type": "Y" }
@@ -195,7 +195,7 @@ fn tagged_enum_with_data() {
         },
         A::Z,
     ];
-    insta::assert_display_snapshot!(serde_json::to_string_pretty(&sample).unwrap(), @r###"
+    insta::assert_snapshot!(serde_json::to_string_pretty(&sample).unwrap(), @r###"
     [
       {
         "type": "X",
@@ -211,13 +211,13 @@ fn tagged_enum_with_data() {
     ]
     "###);
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A =
       | { "type": "X", wow: string }
       | { "type": "Y", thingy: string }
       | { "type": "Z" };
     "###);
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     [<JsonFSharpConverter(BaseUnionEncoding = JsonUnionEncoding.UnwrapSingleFieldCases, UnionTagName = "type")>]
     type A =
       | X of wow: string
@@ -245,7 +245,7 @@ fn externally_tagged_with_data() {
         A::Z,
         A::W(1, 2),
     ];
-    insta::assert_display_snapshot!(serde_json::to_string_pretty(&sample).unwrap(), @r###"
+    insta::assert_snapshot!(serde_json::to_string_pretty(&sample).unwrap(), @r###"
     [
       {
         "X": "..."
@@ -265,14 +265,14 @@ fn externally_tagged_with_data() {
     ]
     "###);
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A =
       | { "X": string }
       | { "Y": { thingy: string } }
       | "Z"
       | { "W": [number, number] };
     "###);
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     [<JsonFSharpConverter(BaseUnionEncoding = JsonUnionEncoding.ExternalTag + JsonUnionEncoding.UnwrapFieldlessTags + JsonUnionEncoding.UnwrapSingleFieldCases)>]
     type A =
       | X of string
@@ -303,7 +303,7 @@ fn adjacent_with_data() {
         A::Z,
         A::W(1, 2),
     ];
-    insta::assert_display_snapshot!(serde_json::to_string_pretty(&sample).unwrap(), @r###"
+    insta::assert_snapshot!(serde_json::to_string_pretty(&sample).unwrap(), @r###"
     [
       {
         "type": "X",
@@ -328,14 +328,14 @@ fn adjacent_with_data() {
     ]
     "###);
 
-    insta::assert_display_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(ts::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     export type A =
       | { "type": "X", "data": string }
       | { "type": "Y", "data": { thingy: string } }
       | { "type": "Z" }
       | { "type": "W", "data": [number, number] };
     "###);
-    insta::assert_display_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
+    insta::assert_snapshot!(fs::ty_decl(A::boxed()).unwrap_or_default(), @r###"
     [<JsonFSharpConverter(BaseUnionEncoding = JsonUnionEncoding.UnwrapSingleFieldCases, UnionTagName = "type", UnionFieldsName = "data")>]
     type A =
       | X of string
